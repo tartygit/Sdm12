@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>User Administration & Maintenance - SDM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+    <nav class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-xl font-bold tracking-wide">SDM Security Maintenance</span>
+            </div>
+            <div class="flex items-center space-x-4 text-sm font-medium">
+                <a href="/" class="hover:text-blue-400">← Back to Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-extrabold text-slate-900">User Maintenance & Access Controls</h1>
+            <p class="text-slate-500 mt-1">Unlock, lock, reset accounts, or manage global configuration switches</p>
+        </div>
+
+        <div th:if="${success}" class="bg-emerald-50 text-emerald-800 border border-emerald-200 p-4 rounded-xl shadow-sm mb-6 text-sm" th:text="${success}"></div>
+        <div th:if="${error}" class="bg-red-50 text-red-800 border border-red-200 p-4 rounded-xl shadow-sm mb-6 text-sm" th:text="${error}"></div>
+
+        <!-- Global Configuration Toggle Controls -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                <span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full mr-2 font-mono">CONFIG</span>
+                Global Demo Toggle Switches
+            </h2>
+            <form th:action="@{/admin/toggle-settings}" method="post" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- MFA switch -->
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="block font-semibold text-slate-800 text-sm">SMS / Email MFA Authentication</span>
+                        <span class="text-xs text-slate-500">MFA check on account login</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="mfaEnabled" class="sr-only peer" th:checked="${mfaEnabled}">
+                        <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <!-- Notification switch -->
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="block font-semibold text-slate-800 text-sm">SMS / Email Approver Alert</span>
+                        <span class="text-xs text-slate-500">Alert checkers on new documents</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="notificationsEnabled" class="sr-only peer" th:checked="${notificationsEnabled}">
+                        <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <!-- Database authentication mode -->
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="block font-semibold text-slate-800 text-sm">Active Directory LDAP Mode</span>
+                        <span class="text-xs text-slate-500">LDAP domain validation</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="ldapEnabled" class="sr-only peer" th:checked="${authStrategy == 'LDAP'}">
+                        <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <div class="md:col-span-3 text-right">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md">
+                        Save Global Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-xl font-bold text-slate-800">System Users Registry</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+                            <th class="px-6 py-3 border-b">Username</th>
+                            <th class="px-6 py-3 border-b">Full Name</th>
+                            <th class="px-6 py-3 border-b">Email</th>
+                            <th class="px-6 py-3 border-b">Role</th>
+                            <th class="px-6 py-3 border-b">Failed Logins</th>
+                            <th class="px-6 py-3 border-b">Status</th>
+                            <th class="px-6 py-3 border-b text-center">Maintenance Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                        <tr th:each="u : ${users}" class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-bold text-slate-800" th:text="${u.username}">admin</td>
+                            <td class="px-6 py-4" th:text="${u.fullName}">Administrator</td>
+                            <td class="px-6 py-4 text-slate-600" th:text="${u.email}">admin@cth.com</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs font-bold rounded-md"
+                                      th:classappend="${u.role == 'ADMIN' ? 'bg-red-100 text-red-800' : (u.role == 'CHECKER' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800')}"
+                                      th:text="${u.role}">
+                                    MAKER
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600 font-mono" th:text="${u.failedAttempts}">0</td>
+                            <td class="px-6 py-4">
+                                <span th:if="${u.locked}" class="px-2 py-1 text-xs font-bold bg-red-100 text-red-800 rounded-md">LOCKED</span>
+                                <span th:if="${!u.locked}" class="px-2 py-1 text-xs font-bold bg-emerald-100 text-emerald-800 rounded-md">ACTIVE</span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <form th:action="@{/admin/users/lock}" method="post" th:if="${!u.locked}">
+                                        <input type="hidden" name="username" th:value="${u.username}">
+                                        <button type="submit" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded text-xs font-bold">Lock</button>
+                                    </form>
+                                    <form th:action="@{/admin/users/unlock}" method="post" th:if="${u.locked}">
+                                        <input type="hidden" name="username" th:value="${u.username}">
+                                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-xs font-bold">Unlock</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Audit logs -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 mt-8 overflow-hidden">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-xl font-bold text-slate-800">System Security Audit Logs</h2>
+                <p class="text-xs text-slate-400 mt-1">Real-time trails of all logins, resets, submission workflows, and toggle events</p>
+            </div>
+            <div class="overflow-x-auto max-h-96">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 uppercase font-semibold">
+                            <th class="px-6 py-3 border-b">Timestamp</th>
+                            <th class="px-6 py-3 border-b">Actor</th>
+                            <th class="px-6 py-3 border-b">Action</th>
+                            <th class="px-6 py-3 border-b">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr th:each="l : ${logs}" class="hover:bg-slate-50">
+                            <td class="px-6 py-3 text-slate-500 font-mono" th:text="${l.timestamp}">2026-08-02 12:00:00</td>
+                            <td class="px-6 py-3 font-bold text-slate-700" th:text="${l.username}">maker</td>
+                            <td class="px-6 py-3"><span class="bg-slate-200 text-slate-800 font-bold px-1.5 py-0.5 rounded" th:text="${l.action}">LOGIN</span></td>
+                            <td class="px-6 py-3 text-slate-600" th:text="${l.details}">Logged in successfully.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

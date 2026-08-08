@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${appName}">Software Development Document Environment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+    <!-- Navbar Header -->
+    <nav class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-xl font-extrabold tracking-wide" th:text="${appName}">Software Development Document Environment</span>
+            </div>
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <span class="text-slate-400">Welcome, <strong class="text-white" th:text="${#authentication.name}">User</strong></span>
+                <a href="/admin" class="hover:text-blue-400 font-bold text-blue-500">System Admin</a>
+                <a href="/reports" class="hover:text-blue-400">Reports Portal</a>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Grid -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900">SDM Document Workspace</h1>
+                <p class="text-slate-500 mt-1">Review, submit, and inspect lifecycle deliverables across 7 software engineering phases</p>
+            </div>
+            <!-- Maker upload or auto-polling status info -->
+            <div class="mt-4 md:mt-0 flex items-center space-x-4 bg-white px-5 py-3 rounded-xl border border-slate-200 shadow-sm text-sm">
+                <span class="inline-flex h-3 w-3 rounded-full bg-emerald-500"></span>
+                <span class="font-semibold text-slate-700">Auto Directory Poller: Active</span>
+                <span class="text-xs text-slate-400">polling: /input-documents</span>
+            </div>
+        </div>
+
+        <div th:if="${success}" class="bg-emerald-50 text-emerald-800 border border-emerald-200 p-4 rounded-xl shadow-sm mb-6 text-sm" th:text="${success}"></div>
+        <div th:if="${error}" class="bg-red-50 text-red-800 border border-red-200 p-4 rounded-xl shadow-sm mb-6 text-sm" th:text="${error}"></div>
+
+        <!-- 3-Character Code Application Selector -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h2 class="text-lg font-bold text-slate-800 mb-3">Target Application Workspace</h2>
+            <form method="get" action="/" class="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
+                <div class="w-full md:w-1/3">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Application (3-Char Code)</label>
+                    <select name="appCode" onchange="this.form.submit()" class="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold">
+                        <option th:each="code : ${allAppCodes}"
+                                th:value="${code.appCode}"
+                                th:text="${code.appCode} + ' - ' + ${code.appName}"
+                                th:selected="${code.appCode == currentAppCode}">PRJ</option>
+                        <option th:if="${#lists.isEmpty(allAppCodes)}" value="">No Applications Found</option>
+                    </select>
+                </div>
+                <div class="flex items-end justify-start pt-4">
+                    <p class="text-xs text-slate-400">Every deliverable version is tagged sequentially within its respective 3-character scope.</p>
+                </div>
+            </form>
+        </div>
+
+        <!-- Quick Manual Submission (Maker Only) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8" th:if="${#authorization.expression('hasRole(''MAKER'')')}">
+            <h2 class="text-lg font-bold text-slate-800 mb-4">Manual Document Submission (Maker Upload)</h2>
+            <form th:action="@{/submit}" method="post" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Deliverable</label>
+                    <select name="docId" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800">
+                        <option th:each="doc : ${documents}" th:value="${doc.id}" th:text="${doc.id} + ' - ' + ${doc.title}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">App Code (3 Chars)</label>
+                    <input type="text" name="appCode" required maxlength="3" th:value="${currentAppCode}" placeholder="E.g. PRJ"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 font-bold uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Version Number</label>
+                    <input type="text" name="version" required placeholder="E.g. V1.0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Document Code</label>
+                    <input type="text" name="docCode" required placeholder="E.g. BRD-01" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">File (xlsx, docx, pptx, xml)</label>
+                    <input type="file" name="file" required class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+                <div class="md:col-span-5 text-right mt-2">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md">
+                        Submit Deliverable Document
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 7-Phases Visual Panels -->
+        <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center">
+            <span class="bg-blue-600 text-white text-xs px-2.5 py-1 rounded-full mr-2">PHASES</span>
+            Software Development Lifecycle Stages
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Loop through each of the 7 phases -->
+            <div th:each="phaseNum : ${#numbers.sequence(1, 7)}"
+                 class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between hover:shadow-md transition">
+                <div>
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                        <span class="text-xs font-black uppercase text-blue-600 tracking-wider font-mono" th:text="'Phase ' + ${phaseNum}">PHASE 1</span>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold"
+                              th:text="${#lists.size(documents.?[phaseNumber == __${phaseNum}__])} + ' deliverables'">3 Deliverables</span>
+                    </div>
+
+                    <h3 class="text-md font-bold text-slate-900 mb-4"
+                        th:text="${documents.?[phaseNumber == __${phaseNum}__][0].phaseName}">Phase Title</h3>
+
+                    <!-- Deliverable items inside the phase -->
+                    <div class="space-y-4">
+                        <div th:each="doc : ${documents.?[phaseNumber == __${phaseNum}__]}" class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-blue-600 font-mono" th:text="${doc.id}">P001</span>
+                                <span class="text-[10px] font-bold text-slate-400" th:text="'ID: ' + ${doc.id}">P001</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-800 mt-1" th:text="${doc.title}">Business Requirement Document</h4>
+                            <p class="text-xs text-slate-500 mt-1 italic" th:text="${doc.description}">Configurable Description</p>
+
+                            <!-- Submissions status inside each deliverable -->
+                            <div class="mt-2 pt-2 border-t border-slate-200/50 flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-slate-400">Submissions:</span>
+                                <div class="flex flex-col space-y-1 text-right">
+                                    <div th:each="ver : ${versionsMap.get(doc.id)}" class="text-xs font-medium">
+                                        <a th:href="@{/document/view(id=${ver.id})}"
+                                           class="text-blue-600 hover:underline font-semibold"
+                                           th:text="${ver.versionNumber} + ' (' + ${ver.documentCode} + ')'">V1.0</a>
+                                        <span class="ml-1.5 px-1.5 py-0.5 text-[9px] font-black rounded"
+                                              th:classappend="${ver.status == 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : (ver.status == 'REJECTED' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')}"
+                                              th:text="${ver.status}">PENDING</span>
+                                    </div>
+                                    <span th:if="${#lists.isEmpty(versionsMap.get(doc.id))}" class="text-[10px] text-slate-400 italic">No submissions</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checker Approval Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mt-8 overflow-hidden" th:if="${#authorization.expression('hasRole(''CHECKER'')')}">
+            <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-500 mr-2"></span>
+                Checker Approvals Queue
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+                            <th class="px-6 py-3 border-b">Deliverable</th>
+                            <th class="px-6 py-3 border-b">File Name</th>
+                            <th class="px-6 py-3 border-b">Version / Code</th>
+                            <th class="px-6 py-3 border-b">Maker</th>
+                            <th class="px-6 py-3 border-b">Date Submitted</th>
+                            <th class="px-6 py-3 border-b text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr th:each="ver : ${pendingApprovals}" class="hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <span class="font-bold text-slate-800" th:text="${ver.document.id}">P001</span> -
+                                <span class="text-slate-600" th:text="${ver.document.title}">BRD</span>
+                            </td>
+                            <td class="px-6 py-4 text-blue-600 font-medium hover:underline">
+                                <a th:href="@{/document/view(id=${ver.id})}" th:text="${ver.fileName}">BRD.xlsx</a>
+                            </td>
+                            <td class="px-6 py-4" th:text="${ver.versionNumber} + ' / ' + ${ver.documentCode}">V1.0 / BRD-001</td>
+                            <td class="px-6 py-4 text-slate-600" th:text="${ver.maker.username}">maker</td>
+                            <td class="px-6 py-4 text-slate-500 font-mono" th:text="${ver.submittedAt}">2026-08-02</td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <a th:href="@{/document/view(id=${ver.id})}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">Review & Approve</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(pendingApprovals)}">
+                            <td colspan="6" class="px-6 py-8 text-center text-slate-400 italic">No submissions pending review</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

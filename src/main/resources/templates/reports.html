@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Reports Dashboard - SDM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+    <!-- Navbar Header -->
+    <nav class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-xl font-bold tracking-wide">SDM Reports Portal</span>
+            </div>
+            <div class="flex items-center space-x-4 text-sm font-medium">
+                <a href="/" class="hover:text-blue-400 font-bold">← Workspace Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900">Workflow Approval Reporting</h1>
+                <p class="text-slate-500 mt-1">Audit, export, and examine live Maker-Checker workflow records</p>
+            </div>
+            <!-- Download Buttons -->
+            <div class="mt-4 md:mt-0 flex items-center space-x-3">
+                <a href="/reports/download/excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition">
+                    Download Excel Report
+                </a>
+                <a href="/reports/download/pdf" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition">
+                    Download PDF Report
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter / Configure Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h2 class="text-lg font-bold text-slate-800 mb-3">Configure Online Report View</h2>
+            <form method="get" action="/reports" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Status Filter</label>
+                    <select name="status" onchange="this.form.submit()" class="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="" th:selected="${param.status == null || param.status == ''}">Show All Statuses</option>
+                        <option value="PENDING_APPROVAL" th:selected="${param.status != null && param.status[0] == 'PENDING_APPROVAL'}">Pending Approval</option>
+                        <option value="APPROVED" th:selected="${param.status != null && param.status[0] == 'APPROVED'}">Approved</option>
+                        <option value="REJECTED" th:selected="${param.status != null && param.status[0] == 'REJECTED'}">Rejected</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Scope Application Code</label>
+                    <input type="text" name="appFilter" th:value="${param.appFilter}" placeholder="All (e.g. PRJ)"
+                           class="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold uppercase">
+                </div>
+                <div class="flex items-end justify-start">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold w-full md:w-auto shadow-md">
+                        Apply Configuration Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Reports list Grid / Online Viewer -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-950 text-white">
+                <h2 class="text-xl font-bold">Online Document Lifecycle Records</h2>
+                <span class="text-xs text-slate-400 font-mono" th:text="${#lists.size(records)} + ' records matched'">0 matched</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+                            <th class="px-6 py-3 border-b">ID</th>
+                            <th class="px-6 py-3 border-b">App Code</th>
+                            <th class="px-6 py-3 border-b">Deliverable Title</th>
+                            <th class="px-6 py-3 border-b">Document Details</th>
+                            <th class="px-6 py-3 border-b">Maker</th>
+                            <th class="px-6 py-3 border-b">Status</th>
+                            <th class="px-6 py-3 border-b">Approver Name</th>
+                            <th class="px-6 py-3 border-b">Date Submitted</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                        <tr th:each="r : ${records}" class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-bold text-slate-800" th:text="${r.document.id}">P001</td>
+                            <td class="px-6 py-4 font-mono font-bold text-slate-700" th:text="${r.applicationCode.appCode}">PRJ</td>
+                            <td class="px-6 py-4 text-slate-900 font-medium" th:text="${r.document.title}">BRD</td>
+                            <td class="px-6 py-4">
+                                <span class="block text-slate-800 font-semibold text-xs" th:text="${r.fileName}">brd.xlsx</span>
+                                <span class="block text-slate-400 text-[10px]" th:text="${r.versionNumber} + ' | ' + ${r.documentCode}">V1.0</span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600" th:text="${r.maker.username}">maker</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs font-black rounded"
+                                      th:classappend="${r.status == 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : (r.status == 'REJECTED' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')}"
+                                      th:text="${r.status}">PENDING</span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600 font-semibold" th:text="${r.checker != null ? r.checker.username : 'N/A'}">N/A</td>
+                            <td class="px-6 py-4 text-slate-500 font-mono" th:text="${#temporals.format(r.submittedAt, 'yyyy-MM-dd HH:mm')}">2026-08-02</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(records)}">
+                            <td colspan="8" class="px-6 py-8 text-center text-slate-400 italic">No deliverable document versions matched filters</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
