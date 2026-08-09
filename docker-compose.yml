@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  # 1. Local LLM Server (Ollama)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sdm-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # 2. Python Flask AI & Local RAG Backend
+  ai-backend:
+    build:
+      context: ./ai-backend
+    container_name: sdm-ai-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - CHAT_MODEL=llama3.2:latest
+      - EMBEDDING_MODEL=nomic-embed-text
+    volumes:
+      - faiss_index:/app/faiss_data
+      - sdm_shared_docs:/app/shared_docs
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  # 3. Java Spring Boot Transactional Backend
+  java-backend:
+    build:
+      context: .
+    container_name: sdm-java-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:h2:file:/app/data/sdmdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;AUTO_SERVER=TRUE
+      - APP_AUTH_STRATEGY=DB
+      - APP_POLL_DIR=/app/shared_docs
+      - AI_BACKEND_URL=http://ai-backend:5000
+    volumes:
+      - sdm_java_data:/app/data
+      - sdm_shared_docs:/app/shared_docs
+    depends_on:
+      - ai-backend
+    restart: unless-stopped
+
+  # 4. React + Vite Modern Frontend Client
+  react-frontend:
+    build:
+      context: ./react-frontend
+    container_name: sdm-react-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - java-backend
+      - ai-backend
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  faiss_index:
+  sdm_java_data:
+  sdm_shared_docs:
