@@ -5,3 +5,7 @@ target/
 *.log
 data/
 input-documents/
+node_modules/
+**/node_modules/
+dist/
+**/dist/

@@ -363,6 +363,60 @@ export default function App() {
             </div>
           )}
 
+          {/* Submissions queue and maker checker reviews */}
+          <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-white mb-4">Ingested Document Catalog & Review Logs</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 font-black uppercase tracking-wider">
+                    <th className="py-2">Deliverable ID</th>
+                    <th className="py-2">File Name</th>
+                    <th className="py-2">Version/Code</th>
+                    <th className="py-2">Status</th>
+                    <th className="py-2">Submitter</th>
+                    <th className="py-2 text-center">Maker-Checker Approvals</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {submissions.map((sub) => (
+                    <tr key={sub.id} className="hover:bg-slate-900/40">
+                      <td className="py-3 font-mono font-bold text-blue-400">{sub.docId}</td>
+                      <td className="py-3 font-medium text-slate-100">{sub.fileName}</td>
+                      <td className="py-3 text-slate-400">{sub.version} | {sub.code}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-0.5 rounded font-black text-[9px] ${sub.status === 'APPROVED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : sub.status === 'REJECTED' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}`}>
+                          {sub.status}
+                        </span>
+                      </td>
+                      <td className="py-3 text-slate-400">{sub.maker}</td>
+                      <td className="py-3 text-center">
+                        {role === 'CHECKER' && sub.status === 'PENDING_APPROVAL' ? (
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => handleApprove(sub.id)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-[10px] font-bold"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleReject(sub.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] font-bold"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 italic">{sub.checker ? `Approved by ${sub.checker}` : 'Awaiting Review'}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {/* Option to view password during login simulation */}
           <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl">
             <h3 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-3 flex items-center">
@@ -525,59 +579,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Submissions queue and maker checker reviews */}
-          <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-white mb-4">Ingested Document Catalog & Review Logs</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-black uppercase tracking-wider">
-                    <th className="py-2">Deliverable ID</th>
-                    <th className="py-2">File Name</th>
-                    <th className="py-2">Version/Code</th>
-                    <th className="py-2">Status</th>
-                    <th className="py-2">Submitter</th>
-                    <th className="py-2 text-center">Maker-Checker Approvals</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {submissions.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-slate-900/40">
-                      <td className="py-3 font-mono font-bold text-blue-400">{sub.docId}</td>
-                      <td className="py-3 font-medium text-slate-100">{sub.fileName}</td>
-                      <td className="py-3 text-slate-400">{sub.version} | {sub.code}</td>
-                      <td className="py-3">
-                        <span className={`px-2 py-0.5 rounded font-black text-[9px] ${sub.status === 'APPROVED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : sub.status === 'REJECTED' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}`}>
-                          {sub.status}
-                        </span>
-                      </td>
-                      <td className="py-3 text-slate-400">{sub.maker}</td>
-                      <td className="py-3 text-center">
-                        {role === 'CHECKER' && sub.status === 'PENDING_APPROVAL' ? (
-                          <div className="flex items-center justify-center space-x-2">
-                            <button
-                              onClick={() => handleApprove(sub.id)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-[10px] font-bold"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(sub.id)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] font-bold"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-slate-500 italic">{sub.checker ? `Approved by ${sub.checker}` : 'Awaiting Review'}</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
         {/* Right Column: Local AI Document Recommendations Side-By-Side, Chat & Telemetry */}
