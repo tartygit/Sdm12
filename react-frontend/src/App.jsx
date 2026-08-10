@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   FolderCheck, Sparkles, CheckCircle, AlertTriangle, HelpCircle,
   Send, RefreshCw, Layers, ShieldAlert, Award, FileText, ChevronRight,
-  UserCheck, Sliders, ToggleLeft, ToggleRight, Download, Search, MessageSquare
+  UserCheck, Sliders, ToggleLeft, ToggleRight, Download, Search, MessageSquare, Eye, EyeOff
 } from 'lucide-react';
 
 const PHASES = [
@@ -38,17 +38,79 @@ const PHASES = [
   ]}
 ];
 
+// Multi-language localization dictionary
+const TRANSLATIONS = {
+  EN: {
+    welcome: "Welcome",
+    dashboard: "Workspace Dashboard",
+    reports: "Reports Portal",
+    admin: "System Admin",
+    phases: "Lifecycle Phases",
+    searchPlaceholder: "Search full-text metadata (Elasticsearch)...",
+    manualUpload: "Manual Document Submission",
+    deliverable: "Deliverable",
+    appCode: "App Code (3 Chars)",
+    version: "Version Number",
+    docCode: "Document Code",
+    fileLabel: "Choose file",
+    uploadBtn: "Upload & Analyze",
+    showPassword: "Show Password",
+    viewPasswordLabel: "View password option enabled"
+  },
+  FR: {
+    welcome: "Bienvenue",
+    dashboard: "Tableau de Bord",
+    reports: "Portail des Rapports",
+    admin: "Admin Système",
+    phases: "Phases du Cycle de Vie",
+    searchPlaceholder: "Rechercher des métadonnées (Elasticsearch)...",
+    manualUpload: "Soumission Manuelle de Documents",
+    deliverable: "Livrable",
+    appCode: "Code App (3 Caractères)",
+    version: "Numéro de Version",
+    docCode: "Code du Document",
+    fileLabel: "Choisir un fichier",
+    uploadBtn: "Téléverser et Analyser",
+    showPassword: "Afficher le mot de passe",
+    viewPasswordLabel: "Option afficher le mot de passe activée"
+  },
+  ES: {
+    welcome: "Bienvenido",
+    dashboard: "Tablero de Trabajo",
+    reports: "Portal de Informes",
+    admin: "Admin del Sistema",
+    phases: "Fases del Ciclo de Vida",
+    searchPlaceholder: "Buscar metadatos (Elasticsearch)...",
+    manualUpload: "Presentación Manual de Documentos",
+    deliverable: "Entregable",
+    appCode: "Código de App (3 Caracteres)",
+    version: "Número de Versión",
+    docCode: "Código del Documento",
+    fileLabel: "Seleccionar archivo",
+    uploadBtn: "Cargar y Analizar",
+    showPassword: "Mostrar contraseña",
+    viewPasswordLabel: "Opción mostrar contraseña activada"
+  }
+};
+
 export default function App() {
+  const [locale, setLocale] = useState("EN");
+  const t = TRANSLATIONS[locale];
+
   // App Config states
   const [appName, setAppName] = useState("Software Development Document Environment");
   const [appCode, setAppCode] = useState("PRJ");
   const [currentDeliverables, setCurrentDeliverables] = useState(PHASES);
 
   // Simulation switches
-  const [role, setRole] = useState("MAKER"); // MAKER, CHECKER
+  const [role, setRole] = useState("MAKER");
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [alertsEnabled, setAlertsEnabled] = useState(false);
-  const [authStrategy, setAuthStrategy] = useState("DB"); // DB, LDAP
+  const [authStrategy, setAuthStrategy] = useState("DB");
+
+  // Option to view password states
+  const [showLoginPassword, setShowPassword] = useState(false);
+  const [simulatedPassword, setSimulatedPassword] = useState("SecretPassword@123");
 
   // Local state
   const [selectedDoc, setSelectedDoc] = useState(PHASES[0].deliverables[0]);
@@ -57,6 +119,16 @@ export default function App() {
   const [docCode, setDocCode] = useState("DOC-001");
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+
+  // Telemetry Traces
+  const [telemetryLogs, setTelemetryLogs] = useState([
+    { traceId: "t-abc12", spanName: "SPRING_BOOT_BOOTSTRAP", details: "Context initialized with port 8080", durationMs: 420, timestamp: "Just now" },
+    { traceId: "t-xyz45", spanName: "RETENTION_SCHEDULER_INIT", details: "Retention verified. Limit set to 30 days.", durationMs: 15, timestamp: "Just now" }
+  ]);
 
   // Submissions catalog mock db
   const [submissions, setSubmissions] = useState([
@@ -100,14 +172,12 @@ export default function App() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [activeCitations, setActiveCitations] = useState([]);
 
-  // Auto Poller Directory drops simulation
-  const [pollFiles, setPollFiles] = useState([]);
+  // Poller logs
   const [pollerLog, setPollerLog] = useState(["[SYSTEM] Poller listening on directory /input-documents..."]);
 
   // Set selected deliverable
   const handleSelectDoc = (doc) => {
     setSelectedDoc(doc);
-    // Simulate fetching updated AI Report for document
     setIsAiAnalyzing(true);
     setTimeout(() => {
       setAiReport({
@@ -156,44 +226,33 @@ export default function App() {
     setTimeout(() => setSuccessMsg(""), 4000);
   };
 
-  // Directory drop poller simulation
-  const handleDropSimulation = () => {
-    const randomDoc = PHASES[Math.floor(Math.random() * PHASES.length)].deliverables[0];
-    const mockFile = `${appCode.toUpperCase()}_${randomDoc.id}_V2.0_AUTO-POLLED.docx`;
-
-    setPollerLog(prev => [
-      `[POLLER] Ingested file drop: ${mockFile}`,
-      `[AI PIPELINE] Docling converter successfully parsed layout structure...`,
-      `[AI PIPELINE] Chunked and embedded via nomic-embed-text to FAISS index.`,
-      `[WORKFLOW] Logged as PENDING Maker-Checker review.`,
-      ...prev
-    ]);
-
-    const newSub = {
-      id: Date.now(),
-      docId: randomDoc.id,
-      appCode: appCode.toUpperCase(),
-      fileName: mockFile,
-      version: "V2.0",
-      code: "AUTO-POLLED",
-      status: "PENDING_APPROVAL",
-      maker: "SYSTEM_POLLER",
-      checker: null,
-      submittedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      parsed: {
-        "Auto Parsed Header": "Local directory poller automatically grabbed and parsed this deliverable.",
-        "SDLC Parameters": "Parsed through advanced Docling structures dynamically."
+  // Elasticsearch hybrid metadata/text query
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    // Simulate Elasticsearch inverted index fast matching
+    const matches = [];
+    submissions.forEach(sub => {
+      if (sub.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          sub.docId.toLowerCase().includes(searchQuery.toLowerCase())) {
+        matches.push({
+          fileName: sub.fileName,
+          type: "Metadata (Elasticsearch)",
+          snippet: `Deliverable code ${sub.code} submitted at ${sub.submittedAt}`
+        });
       }
-    };
-
-    setSubmissions(prev => [newSub, ...prev]);
+    });
+    setSearchResults(matches);
   };
 
-  // Approve / Reject workflows
+  // Approve / Reject workflows with digital signatures
   const handleApprove = (subId) => {
     setSubmissions(submissions.map(s => s.id === subId ? { ...s, status: "APPROVED", checker: "checker" } : s));
-    setSuccessMsg("Document has been APPROVED successfully!");
-    setTimeout(() => setSuccessMsg(""), 3000);
+    setSuccessMsg("Document APPROVED with diagonal watermarks and digital signature certificate stamped!");
+    setTimeout(() => setSuccessMsg(""), 4000);
   };
 
   const handleReject = (subId) => {
@@ -202,7 +261,7 @@ export default function App() {
     setTimeout(() => setErrorMsg(""), 3000);
   };
 
-  // Local RAG Chat submit
+  // Chat submit
   const handleChatSubmit = (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -212,9 +271,7 @@ export default function App() {
     setChatInput("");
     setIsChatLoading(true);
 
-    // Simulate streaming and local retrieval augmented generation (RAG)
     setTimeout(() => {
-      // Find matching documents in submissions
       const hasBRD = submissions.some(s => s.docId === "P001");
       let reply = "Based on local semantic search in FAISS vector store: ";
       let citations = [];
@@ -230,7 +287,7 @@ export default function App() {
       setChatHistory(prev => [...prev, { role: "assistant", content: reply }]);
       setActiveCitations(citations);
       setIsChatLoading(false);
-    }, 1200);
+    }, 1000);
   };
 
   return (
@@ -251,10 +308,23 @@ export default function App() {
               <p className="text-xs text-slate-400">Automated SDLC Compliance & Local RAG Environment</p>
             </div>
           </div>
+
           <div className="flex flex-wrap items-center gap-4 mt-4 md:mt-0 text-sm">
+            {/* Multi-language Selector */}
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
+              className="bg-slate-800 border border-slate-700 text-xs font-bold rounded p-1 text-white outline-none"
+            >
+              <option value="EN">EN (English)</option>
+              <option value="FR">FR (Français)</option>
+              <option value="ES">ES (Español)</option>
+            </select>
+
             <span className="bg-blue-900/40 text-blue-300 border border-blue-800/60 px-3 py-1.5 rounded-full font-bold">
-              App Workspace Code: {appCode}
+              {t.appCode}: {appCode}
             </span>
+
             <div className="flex bg-slate-800/80 rounded-lg p-1 border border-slate-700">
               <button
                 onClick={() => setRole("MAKER")}
@@ -266,7 +336,7 @@ export default function App() {
                 onClick={() => setRole("CHECKER")}
                 className={`px-3 py-1 rounded text-xs font-bold transition ${role === 'CHECKER' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
               >
-                CHECKER (APPROVER)
+                CHECKER
               </button>
             </div>
           </div>
@@ -276,7 +346,7 @@ export default function App() {
       {/* Main Grid Workspace */}
       <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-        {/* Left Column: Toggles and 7-Phases Dashboard */}
+        {/* Left Column: Toggles, Fast Search, 7-Phases Dashboard */}
         <div className="lg:col-span-8 space-y-8">
 
           {/* Status alerts */}
@@ -293,72 +363,76 @@ export default function App() {
             </div>
           )}
 
-          {/* Quick Config panel */}
-          <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h3 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-3 flex items-center">
-                <Sliders className="h-4 w-4 mr-1 text-blue-500" />
-                Auth Configuration
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span>LDAP Active Directory Mode</span>
+          {/* Option to view password during login simulation */}
+          <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl">
+            <h3 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-3 flex items-center">
+              <UserCheck className="h-4 w-4 mr-1 text-blue-500" />
+              Simulated Login Portal ({t.viewPasswordLabel})
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showLoginPassword ? "text" : "password"}
+                    value={simulatedPassword}
+                    onChange={(e) => setSimulatedPassword(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white pr-10"
+                  />
                   <button
-                    onClick={() => setAuthStrategy(authStrategy === "DB" ? "LDAP" : "DB")}
-                    className="text-blue-400 hover:text-blue-300 font-bold"
+                    type="button"
+                    onClick={() => setShowPassword(!showLoginPassword)}
+                    className="absolute right-3 top-2 text-slate-400 hover:text-white"
                   >
-                    {authStrategy === 'DB' ? 'OFF (Local DB)' : 'ON (LDAP AD)'}
-                  </button>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span>MFA (SMS/Email Switched)</span>
-                  <button
-                    onClick={() => setMfaEnabled(!mfaEnabled)}
-                    className="text-blue-400 hover:text-blue-300 font-bold"
-                  >
-                    {mfaEnabled ? 'ENABLED' : 'DISABLED'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-3 flex items-center">
-                <ShieldAlert className="h-4 w-4 mr-1 text-blue-500" />
-                Workflow Alerts
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span>Alert Approvers on Drop</span>
-                  <button
-                    onClick={() => setAlertsEnabled(!alertsEnabled)}
-                    className="text-blue-400 hover:text-blue-300 font-bold"
-                  >
-                    {alertsEnabled ? 'ENABLED' : 'DISABLED'}
+                    {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
+              <div className="text-xs text-slate-400">
+                <span>{t.showPassword} toggle icon added above. Field types update instantly in real-time.</span>
+              </div>
             </div>
+          </div>
 
-            <div>
-              <h3 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-3 flex items-center">
-                <FolderCheck className="h-4 w-4 mr-1 text-blue-500" />
-                Auto-Poller Drops
-              </h3>
-              <button
-                onClick={handleDropSimulation}
-                className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold py-2 rounded-lg transition"
-              >
-                Simulate Dropped File
+          {/* Fast Full-text Search (Elasticsearch) */}
+          <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl">
+            <h3 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-3">
+              Fast Full-Text & Metadata Search (Elasticsearch/OpenSearch)
+            </h3>
+            <form onSubmit={handleSearchSubmit} className="flex space-x-2">
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-blue-500 outline-none"
+              />
+              <button type="submit" className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-xs font-bold flex items-center">
+                <Search className="h-3.5 w-3.5 mr-1" />
+                Query
               </button>
-            </div>
+            </form>
+
+            {searchResults.length > 0 && (
+              <div className="mt-4 space-y-2 max-h-40 overflow-y-auto">
+                {searchResults.map((res, i) => (
+                  <div key={i} className="p-2.5 bg-slate-900 rounded border border-slate-800 text-xs">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-white">{res.fileName}</span>
+                      <span className="bg-blue-950 text-blue-400 text-[9px] px-1.5 py-0.5 rounded font-mono font-bold">{res.type}</span>
+                    </div>
+                    <p className="text-slate-400 text-[11px]">{res.snippet}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Interactive Phase Deliverables Grid */}
           <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-black text-white">7-Phase Deliverables Lifecycle</h2>
+                <h2 className="text-xl font-black text-white">{t.phases} Lifecycle</h2>
                 <p className="text-xs text-slate-400 mt-1">Tagging sequences automatically from P001 to P016</p>
               </div>
               <span className="text-xs bg-blue-900/30 text-blue-400 px-3 py-1 rounded-full border border-blue-800">7 SDLC Phases</span>
@@ -395,10 +469,10 @@ export default function App() {
           {/* Maker upload form */}
           {role === 'MAKER' && (
             <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl">
-              <h3 className="text-lg font-bold text-white mb-4">Manual Upload Deliverable Document</h3>
+              <h3 className="text-lg font-bold text-white mb-4">{t.manualUpload}</h3>
               <form onSubmit={handleSubmitFile} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Target Deliverable</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t.deliverable}</label>
                   <select
                     value={selectedDoc.id}
                     onChange={(e) => {
@@ -414,7 +488,7 @@ export default function App() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Version Number</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t.version}</label>
                   <input
                     type="text"
                     value={version}
@@ -423,7 +497,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Document Code</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t.docCode}</label>
                   <input
                     type="text"
                     value={docCode}
@@ -432,7 +506,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Choose File</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t.fileLabel}</label>
                   <input
                     type="file"
                     onChange={(e) => setUploadFile(e.target.files[0])}
@@ -444,7 +518,7 @@ export default function App() {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg text-xs shadow-md transition"
                   >
-                    Upload and Trigger Local AI Pipelines
+                    {t.uploadBtn}
                   </button>
                 </div>
               </form>
@@ -506,7 +580,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Column: Local AI Document Recommendations Side-By-Side & Chat */}
+        {/* Right Column: Local AI Document Recommendations Side-By-Side, Chat & Telemetry */}
         <div className="lg:col-span-4 space-y-8">
 
           {/* Side-by-Side Document AI Analytics Panel */}
@@ -695,12 +769,21 @@ export default function App() {
             </form>
           </div>
 
-          {/* Poller log view */}
-          <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl text-xs font-mono h-[200px] overflow-hidden flex flex-col">
-            <h4 className="font-bold text-slate-400 border-b border-slate-800 pb-2 mb-2 uppercase">Background Auto-Poller Logs</h4>
-            <div className="flex-1 overflow-y-auto space-y-1.5 text-[10px] text-emerald-500">
-              {pollerLog.map((log, idx) => (
-                <p key={idx}>{log}</p>
+          {/* OpenTelemetry Request Diagnostics Logs */}
+          <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col h-[280px]">
+            <h4 className="font-black text-white text-xs border-b border-slate-800 pb-2 mb-2 uppercase flex items-center">
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-blue-400" />
+              OpenTelemetry Diagnostics Tracing Spans
+            </h4>
+            <div className="flex-1 overflow-y-auto space-y-2 text-[10px] font-mono text-slate-400">
+              {telemetryLogs.map((log, idx) => (
+                <div key={idx} className="p-1.5 bg-slate-900/60 rounded border border-slate-800/80">
+                  <div className="flex items-center justify-between font-bold text-slate-300">
+                    <span>Span: {log.spanName}</span>
+                    <span className="text-blue-400">{log.durationMs}ms</span>
+                  </div>
+                  <p className="text-[9px] mt-0.5 text-slate-500">TraceId: {log.traceId} | {log.details}</p>
+                </div>
               ))}
             </div>
           </div>
